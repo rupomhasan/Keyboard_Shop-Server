@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 var __awaiter =
   (this && this.__awaiter) ||
   function (thisArg, _arguments, P, generator) {
@@ -19,7 +19,7 @@ var __awaiter =
       }
       function rejected(value) {
         try {
-          step(generator['throw'](value));
+          step(generator["throw"](value));
         } catch (e) {
           reject(e);
         }
@@ -37,10 +37,10 @@ var __importDefault =
   function (mod) {
     return mod && mod.__esModule ? mod : { default: mod };
   };
-Object.defineProperty(exports, '__esModule', { value: true });
-const mongoose_1 = __importDefault(require('mongoose'));
-const app_1 = require('./app');
-const config_1 = __importDefault(require('./config'));
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importDefault(require("mongoose"));
+const app_1 = require("./app");
+const config_1 = __importDefault(require("./config"));
 main().catch((err) => console.log(err));
 function main() {
   return __awaiter(this, void 0, void 0, function* () {
