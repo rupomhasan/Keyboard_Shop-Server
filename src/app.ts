@@ -3,6 +3,7 @@ export const app = express();
 import cors from "cors";
 import { router } from "./app/routes";
 import { NotFoundRoute } from "./app/middlewares/NotFoundRoute";
+import { GlobalErrorHandler } from "./app/middlewares/GlobalErrorHandler";
 
 app.use(express.json());
 app.use(cors());
@@ -12,5 +13,5 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api", router)
-
+app.use(GlobalErrorHandler)
 app.use(NotFoundRoute)
