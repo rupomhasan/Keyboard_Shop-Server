@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status";
 import { AppError } from "../../Error/AppError";
 import { TBrand } from "./brand.interface";
 import { Brand } from "./brand.model";
+import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
 
 
 const getAllBrand = async () => {
@@ -32,14 +34,17 @@ const getSingleBrand = async (_id: string) => {
 
 
 
-const createBrand = async (payload: TBrand) => {
+const createBrand = async (file: any, payload: TBrand) => {
 
   const isBrandExist = await Brand.findOne({ brandName: payload.brandName })
 
   if (isBrandExist) {
     throw new AppError(httpStatus.BAD_REQUEST, "This brand name is already exist")
   }
-
+  if (file) {
+    const { secure_url } = await sendImageToCloudinary(payload.brandName, file?.path);
+    payload.logo = secure_url
+  }
   const result = await Brand.create(payload)
   return result
 

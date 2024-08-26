@@ -9,7 +9,6 @@ const brandSchema = new Schema<TBrand>({
   },
   logo: {
     type: String,
-    required: true
   }
 })
 

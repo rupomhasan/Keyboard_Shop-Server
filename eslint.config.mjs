@@ -29,6 +29,7 @@ export default [
       indent: ["error", 2],
       "react/prop-types": "off",
       "@typescript-eslint/no-unused-vars": ["error"],
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];

@@ -1,9 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status";
 import { AppError } from "../../Error/AppError";
 import { TUser } from "./user.interface"
 import { User } from "./user.model"
-const createCustomerIntoDB = async (data: TUser) => {
-  const isUserExist = await User.findOne({ email: data.email });
+import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
+import { handleExistingUser } from "./utils/handleExistingUser";
+import { createNewAdminUser } from "./utils/createNewAdmin";
+
+
+
+
+const createCustomerIntoDB = async (file: any, payload: TUser) => {
+  const isUserExist = await User.findOne({ email: payload.email });
 
   if (isUserExist) {
     if (isUserExist.isDeleted) {
@@ -12,29 +20,29 @@ const createCustomerIntoDB = async (data: TUser) => {
 
     throw new AppError(httpStatus.BAD_REQUEST, "user already exists");
   }
-  data.isDeleted = false
-  const result = await User.create(data);
-  return result;
-};
+  if (file) {
 
-const createAdminIntoDB = async (data
-  : Partial<TUser>) => {
-  const isUserExist = await User.findOne({ email: data.email });
-  let result;
-  if (isUserExist) {
-    if (isUserExist.role === "Admin") {
-      throw new AppError(httpStatus.BAD_REQUEST, "this user is already admin")
+    if (file) {
+      const { secure_url } = await sendImageToCloudinary(payload.name, file?.path);
+      payload.photoUrl = secure_url
     }
-    result = await User.findOneAndUpdate({ email: isUserExist.email }, {
-      role: "Admin"
-    })
+
   }
-  data.role = "Admin";
-  data.isDeleted = false
-  result = await User.create(data)
+
+  payload.isDeleted = false
+  const result = await User.create(payload);
   return result;
 };
 
+const createOrUpdateAdminInDB = async (file: any, payload: Partial<TUser>): Promise<TUser> => {
+  const existingUser = await User.findOne({ email: payload.email });
+
+  if (existingUser) {
+    return await handleExistingUser(existingUser, file, payload);
+  } else {
+    return await createNewAdminUser(payload, file);
+  }
+};
 const getUserByIdFromDB = async (_id: string) => {
 
   const result = await User.findById(_id);
@@ -65,7 +73,7 @@ const deleteUserByIdFromDB = async (_id: string) => {
 }
 export const UserService = {
   createCustomerIntoDB,
-  createAdminIntoDB,
+  createOrUpdateAdminInDB,
   getUserByIdFromDB,
   deleteUserByIdFromDB
 } 

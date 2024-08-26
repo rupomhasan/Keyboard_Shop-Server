@@ -14,7 +14,6 @@ const CreateUserValidationSchema = z.object({
       .optional(),
     role: z.enum(["Admin", "Customer"]).default("Customer"),
     order: z.array(z.instanceof(ObjectId)).optional(),
-    photoUrl: z.string().optional(),
     isDeleted: z.boolean().default(false)
   })
 })
@@ -32,7 +31,6 @@ const CreateAdminSchema = z.object({
       .optional(),
     role: z.enum(["Admin", "Customer"]).default("Admin"),
     order: z.array(z.instanceof(ObjectId)).optional(),
-    photoUrl: z.string().optional(),
     isDeleted: z.boolean().default(false)
   })
 })
