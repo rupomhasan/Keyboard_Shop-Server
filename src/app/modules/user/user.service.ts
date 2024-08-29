@@ -20,14 +20,12 @@ const createCustomerIntoDB = async (file: any, payload: TUser) => {
 
     throw new AppError(httpStatus.BAD_REQUEST, "user already exists");
   }
+
   if (file) {
-
-    if (file) {
-      const { secure_url } = await sendImageToCloudinary(payload.name, file?.path);
-      payload.photoUrl = secure_url
-    }
-
+    const { secure_url } = await sendImageToCloudinary(payload.name, file?.path);
+    payload.photoUrl = secure_url
   }
+
 
   payload.isDeleted = false
   const result = await User.create(payload);

@@ -20,7 +20,7 @@ export const handleExistingUser = async (user: TUser, file: any, payload: Partia
 
   const updatedUser = await User.findOneAndUpdate(
     { email: user.email },
-    { role: user.role, photoUrl: user.photoUrl },
+    { $set: user },
     { new: true }
   );
 
