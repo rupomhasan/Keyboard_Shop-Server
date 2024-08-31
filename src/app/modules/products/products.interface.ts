@@ -1,6 +1,7 @@
 import { ObjectId } from "mongoose"
 
 export type TProducts = {
+  _id: string,
   name: string,
   description: string,
   image: string,

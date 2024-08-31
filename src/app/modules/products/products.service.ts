@@ -211,7 +211,6 @@ const deleteProductFromDB = async (_id: string) => {
   const result = await Products.findByIdAndUpdate(_id, {
     isDeleted: true
   }, { new: true });
-  console.log(result)
   return result;
 }
 

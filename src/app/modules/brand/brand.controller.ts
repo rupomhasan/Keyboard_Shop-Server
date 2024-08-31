@@ -34,7 +34,6 @@ const getSingleBrand = catchAsync(async (req, res) => {
 const createBrand = catchAsync(async (req, res) => {
 
 
-  console.log(req.file)
   const result = await brandServices.createBrand(req.file, req.body);
 
   sendResponse(res, {
