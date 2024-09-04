@@ -4,6 +4,7 @@ import { brandRoutes } from "../modules/brand/brand.route";
 import { ProductsRoutes } from "../modules/products/products.route";
 import { OrderRoutes } from "../modules/order/order.route";
 import { AuthRoutes } from "../modules/auth/auth.route";
+import { ReviewRoutes } from "../modules/review/review.route";
 
 
 
@@ -31,6 +32,10 @@ const moduleRoutes = [
   {
     path: "/auth",
     route: AuthRoutes
+  },
+  {
+    path: "/reviews",
+    route: ReviewRoutes
   }
 ];
 

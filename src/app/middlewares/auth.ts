@@ -27,8 +27,16 @@ export const auth = (...requiredRoles: TUserRoll[]) => {
       throw new AppError(httpStatus.UNAUTHORIZED, error.message);
     }
     req.user = decoded;
-    const { email, role } = decoded;
+    const { email, role, exp } = decoded;
+    const currentTime = Math.floor(Date.now() / 1000);
 
+    if (exp === undefined) {
+      throw new AppError(httpStatus.UNAUTHORIZED, "Token does not have an expiration claim");
+    }
+
+    if (currentTime >= exp) {
+      throw new AppError(httpStatus.UNAUTHORIZED, "Token has expired");
+    }
     const user = await User.findOne({ email })
 
     if (!user) {

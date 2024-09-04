@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import { TProducts } from "./products.interface";
 import { Brand } from "../brand/brand.model";
 
-const productSchema: Schema = new Schema({
+const productSchema: Schema = new Schema<TProducts>({
   name: {
     type: String,
     required: true,
@@ -65,4 +65,4 @@ const productSchema: Schema = new Schema({
 });
 
 
-export const Products = mongoose.model<TProducts >("Products", productSchema)
+export const Products = mongoose.model<TProducts>("Products", productSchema)
