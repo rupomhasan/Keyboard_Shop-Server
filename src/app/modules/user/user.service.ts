@@ -1,13 +1,30 @@
+import jwt, { JwtPayload } from "jsonwebtoken";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status";
 import { AppError } from "../../Error/AppError";
-import { TUser } from "./user.interface"
+import { TJwtPayload, TUser } from "./user.interface"
 import { User } from "./user.model"
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
 import { handleExistingUser } from "./utils/handleExistingUser";
 import { createNewAdminUser } from "./utils/createNewAdmin";
+;
+import config from "../../config";
 
 
+const myProfile = async (user: JwtPayload) => {
+
+  const myData = await User.findOne({ email: user.email }).populate("order")
+
+  if (!myData) {
+    throw new AppError(httpStatus.NOT_FOUND, "Your not authorized your")
+  }
+  if (myData.isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, "Your  nor authorized")
+  }
+
+  return myData
+
+}
 
 
 const createCustomerIntoDB = async (file: any, payload: TUser) => {
@@ -28,8 +45,22 @@ const createCustomerIntoDB = async (file: any, payload: TUser) => {
 
 
   payload.isDeleted = false
-  const result = await User.create(payload);
-  return result;
+  const result = (await User.create(payload));
+  result.password = ""
+
+  const jwtPayload: TJwtPayload = {
+    email: result.email,
+    role: result.role
+  };
+
+  const accessToken = jwt.sign(jwtPayload, config.jwt_access_secret as string, { expiresIn: config.accessTokenExpiresIn });
+
+  const refreshToken = jwt.sign(jwtPayload, config.jwt_refresh_secret as string, { expiresIn: config.refreshTokenExpiresIn });
+
+
+
+
+  return { result, accessToken, refreshToken };
 };
 
 const createOrUpdateAdminInDB = async (file: any, payload: Partial<TUser>): Promise<TUser> => {
@@ -43,7 +74,7 @@ const createOrUpdateAdminInDB = async (file: any, payload: Partial<TUser>): Prom
 };
 const getUserByIdFromDB = async (_id: string) => {
 
-  const result = await User.findById(_id);
+  const result = await User.findById(_id).select("-password");
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, "no user available with this account")
   }
@@ -70,6 +101,7 @@ const deleteUserByIdFromDB = async (_id: string) => {
   return result
 }
 export const UserService = {
+  myProfile,
   createCustomerIntoDB,
   createOrUpdateAdminInDB,
   getUserByIdFromDB,

@@ -1,15 +1,17 @@
 import { Types } from "mongoose"
 import { TItems, TShippedAddress } from "./utils.types"
 
-
+export type TStatus = "pending" | "shipped" | "delivered" | "canceled"
 
 export type TOrder = {
-  user: Types.ObjectId,
+  // _id?: Types.ObjectId,
   items: TItems[],
+  email: string,
   deliveryCharge: 120 | 50,
-  orderStatus: "pending" | "shipped" | "delivered" | "canceled",
+  orderStatus: TStatus,
   subTotal: number,
   totalPrice: number,
   shippedAddress: TShippedAddress,
   paymentId: Types.ObjectId,
+  isDeleted?: boolean
 }

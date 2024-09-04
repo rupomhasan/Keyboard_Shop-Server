@@ -20,15 +20,18 @@ const ShippedAddressSchema = new Schema<TShippedAddress>({
 });
 
 const OrderSchema = new Schema<TOrder>({
-
-  user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  email: { type: String },
   items: { type: [ItemsSchema], required: true },
   subTotal: { type: Number },
   totalPrice: { type: Number },
   shippedAddress: { type: ShippedAddressSchema, required: true },
   paymentId: { type: Schema.Types.ObjectId, ref: "paymentId", required: true },
   deliveryCharge: { type: Number },
-  orderStatus: { type: String, enum: OrderStatus }
+  orderStatus: { type: String, enum: OrderStatus, default: "pending" },
+  isDeleted: { type: Boolean, default: false }
 });
+
+
+
 
 export const Order = mongoose.model("Order", OrderSchema)

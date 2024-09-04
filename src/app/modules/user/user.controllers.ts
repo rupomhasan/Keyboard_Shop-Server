@@ -6,7 +6,13 @@ import { UserService } from "./user.service";
 
 const createCustomer = catchAsync(async (req, res) => {
   const data = req.body
-  const result = await UserService.createCustomerIntoDB(req.file, data)
+  const { refreshToken, ...result } = await UserService.createCustomerIntoDB(req.file, data)
+
+  res.cookie("refreshToken", refreshToken, {
+    secure: true,
+    httpOnly: true
+  })
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true, message: "Customer is created successfully",
@@ -47,6 +53,18 @@ const deleteSingleUser = catchAsync(async (req, res) => {
   })
 })
 
+const myProfile = catchAsync(async (req, res) => {
+
+  const user = req.user
+  const result = await UserService.myProfile(user)
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true, message: "Your is data retrieved successfully",
+    data: result
+  })
+
+})
 
 
-export const UserControllers = { createCustomer, createAdmin, getSingleUser, deleteSingleUser }
+export const UserControllers = { createCustomer, createAdmin, getSingleUser, deleteSingleUser, myProfile }

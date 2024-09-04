@@ -22,7 +22,7 @@ export const handleExistingUser = async (user: TUser, file: any, payload: Partia
     { email: user.email },
     { $set: user },
     { new: true }
-  );
+  ).select("-password");
 
   if (!updatedUser) {
     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update the user.");

@@ -20,11 +20,7 @@ const ShippedAddressSchema = z.object({
 const OrderValidationSchema = z.object(
   {
     body: z.object({
-      user: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
-        message: "Invalid userId",
-      }),
       items: z.array(ItemsSchema),
-
       shippedAddress: ShippedAddressSchema,
       paymentId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
         message: "Invalid paymentIdId",
@@ -32,5 +28,9 @@ const OrderValidationSchema = z.object(
     })
   }
 );
-
-export { OrderValidationSchema };
+const orderStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(["pending", "shipped", "delivered", "canceled"])
+  })
+});
+export { OrderValidationSchema, orderStatusSchema };

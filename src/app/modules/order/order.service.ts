@@ -2,24 +2,37 @@
 import httpStatus from "http-status";
 import { AppError } from "../../Error/AppError";
 import { Products } from "../products/products.model";
-import { TOrder } from "./order.interface"
+import { TOrder, TStatus } from "./order.interface"
 import { totalPrice } from "./utils/totalPrice";
 import { Order } from "./order.model";
 import mongoose from "mongoose";
 import { User } from "../user/user.model";
+import { JwtPayload } from "jsonwebtoken";
+import { sendMail } from "../../utils/sendMail";
 
 
-const getAllOrderFormDB = () => {
+const getAllOrderFormDB = async () => {
+
+  const result = await Order.find({});
+
+
+  return result;
+
+
 
 }
 
-const getMyOrderDB = async () => {
+const getMyOrderFromDB = async (user: JwtPayload) => {
+  const myOrder = await Order.find({ email: user.email, isDeleted: false })
+
+
+  return myOrder
 
 }
-const createNewOrderIntoDB = async (payload: TOrder) => {
-  const { items, paymentId, user: _id } = payload;
+const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
+  const { items, paymentId } = payload;
 
-  const isUserExist = await User.findById(_id)
+  const isUserExist = await User.findOne({ email: user.email })
 
   if (!isUserExist) {
     throw new AppError(httpStatus.BAD_REQUEST, "User is not found ")
@@ -80,42 +93,124 @@ const createNewOrderIntoDB = async (payload: TOrder) => {
     payload.subTotal = total;
     payload.deliveryCharge = 120;
     payload.totalPrice = total + 120;
+    // payload.orderStatus = "pending";
+    payload.email = user.email
 
     // Create the order in the database
     const order = await Order.create([payload], { session });
-
     // const order = orders[0]
-    await User.findByIdAndUpdate(_id, {
+    await User.findOneAndUpdate({ email: user.email }, {
       $push: { order: order[0]._id }
     }, {
       session
     })
-
+    sendMail(isUserExist, order[0])
 
     await session.commitTransaction();
     await session.endSession();
     return order;
   } catch (error: any) {
     await session.abortTransaction();
-    console.log(error)
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
 };
 
-const updateMyOrderFormDB = async () => {
+const canceledMyOrderFormDB = async (user: JwtPayload, _id: string) => {
+
+  const myOrder = await Order.findById(_id)
+
+  if (myOrder?.email !== user.email) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Your not authorized to cancel this order")
+  }
+  if (myOrder?.orderStatus !== "pending") {
+    throw new AppError(httpStatus.BAD_REQUEST, `Your cann't change this order status ${myOrder?.orderStatus} to canceled`)
+  }
+
+  const result = await Order.findByIdAndUpdate(_id, { orderStatus: "canceled" })
+
+
+
+  return result
 
 
 }
 
-const updateOrderByIdFormDB = async () => {
+const updateOrderStatusFormDB = async (_id: string, status: TStatus) => {
+  const myOrder = await Order.findById(_id);
+  if (!myOrder) {
+    throw new AppError(httpStatus.NOT_FOUND, "This order id does not exist");
+  }
+  if (myOrder.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, "This order is deleted");
+  }
 
+  if (myOrder.orderStatus === "canceled") {
+    throw new AppError(httpStatus.BAD_REQUEST, "You cannot change the status of a canceled order");
+  }
+  if (myOrder.orderStatus === status) {
+    throw new AppError(httpStatus.BAD_REQUEST, `this order is already ${status}`)
+  }
+
+  if (myOrder.orderStatus === "delivered" && (status === "shipped" || status === "pending" || status === "canceled")) {
+    throw new AppError(httpStatus.BAD_REQUEST, `You cannot change directly from ${myOrder.orderStatus} to ${status}`);
+  }
+
+  if (myOrder.orderStatus === "shipped" && status === "pending") {
+    throw new AppError(httpStatus.BAD_REQUEST, `You cannot change directly from ${myOrder.orderStatus} to ${status}`);
+  }
+
+  const result = await Order.findByIdAndUpdate(
+    _id,
+    { orderStatus: status },
+    { new: true }
+  );
+
+  const user = await User.findOne({ email: myOrder.email });
+  if (!user) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User not found");
+  }
+
+  if (result?.orderStatus === status) {
+    try {
+      sendMail(user, result);
+    } catch (error: any) {
+      throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+    }
+  }
+
+  return result;
+};
+
+
+
+
+const deleteOrderByIdFormDB = async (_id: string) => {
+  const order = await Order.findById(_id)
+
+  if (!order) {
+    throw new AppError(httpStatus.NOT_FOUND, "This order id is not exist")
+  }
+  if (order.isDeleted) {
+    throw new AppError(httpStatus.NOT_FOUND, "This order is deleted")
+  }
+
+  if (order.orderStatus !== "canceled") {
+    throw new AppError(httpStatus.BAD_REQUEST, `You can not delete  ${order.orderStatus} status  `)
+  }
+
+  const result = await Order.findByIdAndUpdate(_id, {
+    isDeleted: true
+  }, { new: true })
+
+  return result?.isDeleted
 }
 
 
 export const orderService = {
   getAllOrderFormDB,
-  getMyOrderDB,
+  getMyOrderFromDB,
   createNewOrderIntoDB,
-  updateMyOrderFormDB,
-  updateOrderByIdFormDB
+  canceledMyOrderFormDB,
+  updateOrderStatusFormDB,
+  deleteOrderByIdFormDB
 }
