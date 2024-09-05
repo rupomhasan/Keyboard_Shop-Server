@@ -25,12 +25,12 @@ const OrderSchema = new Schema<TOrder>({
   subTotal: { type: Number },
   totalPrice: { type: Number },
   shippedAddress: { type: ShippedAddressSchema, required: true },
-  paymentId: { type: Schema.Types.ObjectId, ref: "paymentId", required: true },
+  tranId: { type: String },
+  paidStatus: { type: Boolean, default: false },
   deliveryCharge: { type: Number },
   orderStatus: { type: String, enum: OrderStatus, default: "pending" },
   isDeleted: { type: Boolean, default: false }
 });
-
 
 
 

@@ -9,6 +9,9 @@ import mongoose from "mongoose";
 import { User } from "../user/user.model";
 import { JwtPayload } from "jsonwebtoken";
 import { sendMail } from "../../utils/sendMail";
+import { ObjectId } from "mongodb";
+
+
 
 
 const getAllOrderFormDB = async () => {
@@ -30,8 +33,7 @@ const getMyOrderFromDB = async (user: JwtPayload) => {
 
 }
 const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
-  const { items, paymentId } = payload;
-
+  const { items } = payload;
   const isUserExist = await User.findOne({ email: user.email })
 
   if (!isUserExist) {
@@ -80,7 +82,6 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
 
   try {
     session.startTransaction();
-
     // Update the product quantities in the database
     for (const item of items) {
       await Products.findOneAndUpdate(
@@ -89,16 +90,19 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
         { new: true, session }
       );
     }
-
+    const tran_id = new ObjectId().toString();
     payload.subTotal = total;
     payload.deliveryCharge = 120;
     payload.totalPrice = total + 120;
     // payload.orderStatus = "pending";
     payload.email = user.email
+    payload.tranId = tran_id
 
-    // Create the order in the database
+
+  
     const order = await Order.create([payload], { session });
-    // const order = orders[0]
+
+
     await User.findOneAndUpdate({ email: user.email }, {
       $push: { order: order[0]._id }
     }, {
@@ -111,6 +115,7 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
     return order;
   } catch (error: any) {
     await session.abortTransaction();
+    console.log(error)
     throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error);
   }
 };

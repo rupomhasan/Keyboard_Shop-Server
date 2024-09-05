@@ -22,9 +22,6 @@ const OrderValidationSchema = z.object(
     body: z.object({
       items: z.array(ItemsSchema),
       shippedAddress: ShippedAddressSchema,
-      paymentId: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
-        message: "Invalid paymentIdId",
-      }),
     })
   }
 );
