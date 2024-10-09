@@ -13,7 +13,12 @@ const GlobalErrorHandler_1 = require("./app/middlewares/GlobalErrorHandler");
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 exports.app.use(express_1.default.json());
 exports.app.use((0, cookie_parser_1.default)());
-exports.app.use((0, cors_1.default)());
+exports.app.use((0, cors_1.default)({
+    origin: ["http://localhost:5173", "https://mechanical-keyboard-shop-client-six.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+}));
 exports.app.get("/", (req, res) => {
     res.send("Welcome to Assignment-4");
 });

@@ -9,13 +9,14 @@ import config from "../../config";
 import { TJwtPayload } from "../user/user.interface";
 
 const loginUser = async ({ email, password }: TLoginUser) => {
-
-  const user = await User.findOne({ email: email }).select("+password")
+  const user = await User.findOne({ email: email }, { new: true }).select("+password role isDeleted")
 
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, `${email} is not found , No account associated with this email address`)
   }
+
+
 
   const isPasswordMatch = await bcrypt.compare(password, user.password)
 
@@ -23,15 +24,14 @@ const loginUser = async ({ email, password }: TLoginUser) => {
   if (!isPasswordMatch) {
     throw new AppError(httpStatus.BAD_REQUEST, "Your password is wrong")
   }
-
-  if (user?.isDeleted) {
-    throw new AppError(httpStatus.FORBIDDEN, `${email} is deleted`)
+  if (user.isDeleted) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are blocked by Admin")
   }
 
 
 
   const jwtPayload: TJwtPayload = {
-    email: user.email,
+    email,
     role: user.role
   };
 
@@ -62,7 +62,6 @@ const refreshToken = async (token: string) => {
   }
   const { email, role } = decoded;
 
-  console.log(decoded)
 
   const user = await User.findOne({ email })
 

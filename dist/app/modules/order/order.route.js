@@ -13,6 +13,7 @@ const auth_1 = require("../../middlewares/auth");
 const router = express_1.default.Router();
 router.post("/create-order", (0, auth_1.auth)(user_constant_1.USER_ROLE.Admin, user_constant_1.USER_ROLE.Customer), (0, validateRequest_1.default)(order_validation_1.OrderValidationSchema), order_controller_1.orderControllers.createNewOrder);
 router.get("/", (0, auth_1.auth)(user_constant_1.USER_ROLE.Admin), order_controller_1.orderControllers.getAllOrder);
+router.get("/:id", order_controller_1.orderControllers.getOrderById);
 router.get("/my-order", (0, auth_1.auth)(user_constant_1.USER_ROLE.Customer), order_controller_1.orderControllers.getMyOrder);
 router.patch("/cancel-my-order/:id", (0, auth_1.auth)(user_constant_1.USER_ROLE.Customer), order_controller_1.orderControllers.canceledMyOrder);
 router.patch("/:id", (0, auth_1.auth)(user_constant_1.USER_ROLE.Admin), (0, validateRequest_1.default)(order_validation_1.orderStatusSchema), order_controller_1.orderControllers.updateOrderById);

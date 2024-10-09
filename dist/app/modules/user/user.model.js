@@ -78,4 +78,4 @@ UserSchema.pre("save", function (next) {
         next();
     });
 });
-exports.User = mongoose_1.default.model("user", UserSchema);
+exports.User = mongoose_1.default.model("User", UserSchema);

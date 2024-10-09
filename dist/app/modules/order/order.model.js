@@ -29,14 +29,14 @@ const order_constant_1 = require("./order.constant");
 const ItemsSchema = new mongoose_1.Schema({
     productId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Product", required: true },
     quantity: { type: Number, required: true },
-    price: { type: Number, required: true },
-    total: { type: Number, required: true }
+    price: { type: Number, },
+    total: { type: Number, }
 });
 const ShippedAddressSchema = new mongoose_1.Schema({
     customerName: { type: String, required: true },
     states: { type: String, required: true },
     contactNo: { type: String, required: true },
-    zipCode: { type: Number, required: true },
+    zipCode: { type: String, required: true },
     address: { type: String, required: true },
     note: { type: String, required: false }
 });

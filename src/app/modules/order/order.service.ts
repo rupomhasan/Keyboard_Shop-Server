@@ -51,31 +51,45 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
     let productFound = false;
 
     for (let r = 0; r < isProductExist.length; r++) {
-      const isExist = (items[i].productId).toString() === (isProductExist[r]._id).toString();
+      const isExist = items[i].productId.toString() === isProductExist[r]._id.toString();
 
       if (isExist) {
         productFound = true;
 
-        if (isProductExist[r].availableQuantity === 0) {
-          throw new AppError(httpStatus.CONFLICT, `The product '${isProductExist[r].name}' is currently out of stock.`);
+        const product = isProductExist[r]; // Reference to the found product
+
+        // Ensure the product has availableQuantity
+        if (product.availableQuantity === undefined) {
+          throw new AppError(httpStatus.NOT_FOUND, `Available quantity is missing for product '${product.name}'.`);
         }
 
-        if (isProductExist[r].availableQuantity < items[i].quantity) {
-          throw new AppError(httpStatus.CONFLICT, `Insufficient quantity for '${isProductExist[r].name}'. Available: ${isProductExist[r].availableQuantity}, Requested: ${items[i].quantity}.`);
+        // Check if the product is out of stock
+        if (product.availableQuantity === 0) {
+          throw new AppError(httpStatus.CONFLICT, `The product '${product.name}' is currently out of stock.`);
         }
 
-        // Calculate the price and subTotal for the item
-        items[i].price = isProductExist[r].price;
-        items[i].total = Math.round(isProductExist[r].price * items[i].quantity)
+        // Check if the requested quantity exceeds available stock
+        if (product.availableQuantity < items[i].quantity) {
+          throw new AppError(
+            httpStatus.CONFLICT,
+            `Insufficient quantity for '${product.name}'. Available: ${product.availableQuantity}, Requested: ${items[i].quantity}.`
+          );
+        }
 
-        break;
+        // Calculate the price and total for the item
+        items[i].price = product.price;
+        items[i].total = Math.round(product.price * items[i].quantity);
+
+        break; // Exit inner loop when the product is found and processed
       }
     }
 
+    // If the product was not found in isProductExist
     if (!productFound) {
       throw new AppError(httpStatus.NOT_FOUND, `Product with ID ${items[i].productId} not found.`);
     }
   }
+
 
   const total = totalPrice(items, isProductExist);
   const session = await mongoose.startSession();
@@ -98,8 +112,6 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
     payload.email = user.email
     payload.tranId = tran_id
 
-
-  
     const order = await Order.create([payload], { session });
 
 
@@ -115,8 +127,7 @@ const createNewOrderIntoDB = async (payload: TOrder, user: JwtPayload) => {
     return order;
   } catch (error: any) {
     await session.abortTransaction();
-    console.log(error)
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error);
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
@@ -211,7 +222,19 @@ const deleteOrderByIdFormDB = async (_id: string) => {
 }
 
 
+const getOrderbyIdFormDB = async (id: string) => {
+
+  const result = await Order.findOne({ _id: id, isDeleted: false })
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, "this product is not available")
+
+  }
+
+  return result
+
+}
 export const orderService = {
+  getOrderbyIdFormDB,
   getAllOrderFormDB,
   getMyOrderFromDB,
   createNewOrderIntoDB,

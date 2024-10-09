@@ -37,7 +37,8 @@ const createCustomer = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
     });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
-        success: true, message: "Customer is created successfully",
+        success: true,
+        message: "Customer is created successfully",
         data: result
     });
 }));
@@ -47,6 +48,14 @@ const createAdmin = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true, message: "Admin is created successfully",
+        data: result
+    });
+}));
+const getAllUser = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.UserService.getAllUserFormDB();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true, message: "User retrieved successfully",
         data: result
     });
 }));
@@ -77,4 +86,4 @@ const myProfile = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void
         data: result
     });
 }));
-exports.UserControllers = { createCustomer, createAdmin, getSingleUser, deleteSingleUser, myProfile };
+exports.UserControllers = { createCustomer, getAllUser, createAdmin, getSingleUser, deleteSingleUser, myProfile };

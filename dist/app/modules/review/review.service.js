@@ -21,24 +21,40 @@ const review_model_1 = require("./review.model");
 const mongoose_1 = __importDefault(require("mongoose"));
 const user_constant_1 = require("../user/utils/user.constant");
 const giveReviewSelectedProduct = (user, payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const isUserExist = yield user_model_1.User.findOne({ email: user.email });
-    const isProductExist = yield products_model_1.Products.findById(payload.product);
-    if (!isUserExist) {
-        throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "User is not found ");
+    console.log(user);
+    if (user === null || user === void 0 ? void 0 : user.email) {
+        const isUserExist = yield user_model_1.User.findOne({ email: user.email });
+        if (isUserExist) {
+            payload.user = isUserExist._id;
+        }
     }
+    const isProductExist = yield products_model_1.Products.findById(payload.product).populate("reviews");
     if (!isProductExist) {
         throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, `this ${payload.product} is not found`);
     }
-    payload.user = isUserExist._id;
     const session = yield mongoose_1.default.startSession();
+    const totalReview = (isProductExist === null || isProductExist === void 0 ? void 0 : isProductExist.reviews) ? isProductExist.reviews.length : 0;
     try {
         session.startTransaction();
         const result = yield review_model_1.Review.create([payload], { new: true, session });
         yield products_model_1.Products.findByIdAndUpdate(payload.product, {
-            $push: { reviews: result[0]._id }
-        }, {
-            new: true, session
-        });
+            $push: { reviews: result[0]._id },
+            numberOfReviews: totalReview + 1
+        }, { new: true, session });
+        const updatedProduct = yield products_model_1.Products.findById(payload.product).populate("reviews");
+        let averageRating = 0;
+        if ((updatedProduct === null || updatedProduct === void 0 ? void 0 : updatedProduct.reviews) && (updatedProduct === null || updatedProduct === void 0 ? void 0 : updatedProduct.reviews.length) > 0) {
+            const totalRatings = updatedProduct.reviews.reduce((acc, review) => {
+                if (typeof review === "object" && "rating" in review) {
+                    return acc + (review.rating || 0);
+                }
+                return acc;
+            }, 0);
+            averageRating = totalRatings / updatedProduct.reviews.length;
+        }
+        yield products_model_1.Products.findByIdAndUpdate(payload.product, {
+            averageRating: averageRating
+        }, { new: true, session });
         yield session.commitTransaction();
         yield session.endSession();
         return result;
@@ -48,8 +64,8 @@ const giveReviewSelectedProduct = (user, payload) => __awaiter(void 0, void 0, v
         throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, error.message);
     }
 });
-const getAllReviewFromDB = () => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield review_model_1.Review.find({});
+const getAllReviewFromDB = (limit) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield review_model_1.Review.find({}).populate("user").limit(limit);
     return result;
 });
 const getMyReview = (user) => __awaiter(void 0, void 0, void 0, function* () {
@@ -61,6 +77,7 @@ const getMyReview = (user) => __awaiter(void 0, void 0, void 0, function* () {
     return myReviews;
 });
 const getReviewsForProduct = (productId) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(productId);
     const result = yield review_model_1.Review.find({ product: productId });
     return result;
 });

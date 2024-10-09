@@ -10,6 +10,9 @@ router.post("/create-order", auth(USER_ROLE.Admin, USER_ROLE.Customer), Validate
 
 router.get("/", auth(USER_ROLE.Admin), orderControllers.getAllOrder)
 
+
+router.get("/:id", orderControllers.getOrderById)
+
 router.get("/my-order", auth(USER_ROLE.Customer), orderControllers.getMyOrder)
 
 router.patch("/cancel-my-order/:id", auth(USER_ROLE.Customer), orderControllers.canceledMyOrder)

@@ -17,8 +17,10 @@ const giveReview = catchAsync(async (req, res) => {
 
 
 const getAllReview = catchAsync(async (req, res) => {
+  const { limit } = req.query
 
-  const result = await reviewService.getAllReviewFromDB()
+
+  const result = await reviewService.getAllReviewFromDB(Number(limit))
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

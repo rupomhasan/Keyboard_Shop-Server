@@ -10,7 +10,13 @@ import cookieParser from "cookie-parser"
 
 app.use(express.json());
 app.use(cookieParser())
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "https://mechanical-keyboard-shop-client-six.vercel.app"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
+
 
 
 app.get("/", (req: Request, res: Response) => {

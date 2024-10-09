@@ -16,5 +16,8 @@ exports.default = {
     jwt_refresh_secret: process.env.JWT_REFRESH_SECRET,
     accessTokenExpiresIn: process.env.JWT_ACCESS_EXPIRESIN,
     refreshTokenExpiresIn: process.env.JWT_REFRESH_EXPIRESIN,
-    gmail_passkey: process.env.GMAIL_PASSKEY
+    gmail_passkey: process.env.GMAIL_PASSKEY,
+    store_id: process.env.STORE_ID,
+    store_pass: process.env.STORE_PASS,
+    is_live: process.env.IS_LIVE
 };

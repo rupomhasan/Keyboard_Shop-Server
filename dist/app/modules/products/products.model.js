@@ -59,26 +59,63 @@ const productSchema = new mongoose_1.Schema({
         required: true,
         min: 0,
     },
-    reviews: [{
-            type: mongoose_1.Schema.Types.ObjectId,
-            // ref: 'Review',
-        }],
-    rating: {
+    discount: {
         type: Number,
-        min: 0,
-        max: 5,
         default: 0,
+        min: 0,
     },
-    isFeatured: {
-        type: Boolean,
-        default: false,
+    sku: {
+        type: String,
+        trim: true,
     },
-    size: {
+    reviews: [
+        {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: "Review",
+        },
+    ],
+    connectivity: {
         type: String,
         required: true,
     },
+    dimensions: {
+        length: { type: Number, required: true },
+        width: { type: Number, required: true },
+        height: { type: Number, required: true },
+    },
+    averageRating: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5,
+    },
+    numberOfReviews: {
+        type: Number,
+        default: 0,
+    },
+    status: {
+        type: String,
+        enum: ["instock", "upcoming", "preorder", "outofstock"],
+        required: true,
+    },
+    type: {
+        type: String,
+        enum: ["standard", "gaming"],
+        required: true,
+    },
+    features: {
+        size: { type: String },
+        keys: { type: Number },
+        SwitchLifecycle: { type: String },
+        Switch: { type: String },
+        SwitchColor: { type: String },
+        mode: { type: String },
+        battery: { type: String },
+        lighting: { type: String },
+        weight: { type: String },
+    },
     slug: {
-        type: String
+        type: String,
     },
     isDeleted: {
         type: Boolean,

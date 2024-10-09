@@ -4,6 +4,10 @@ import catchAsync from "../../utils/catchAsync";
 import sendResponse from "../../utils/sendResponse";
 import { UserService } from "./user.service";
 
+
+
+
+
 const createCustomer = catchAsync(async (req, res) => {
   const data = req.body
   const { refreshToken, ...result } = await UserService.createCustomerIntoDB(req.file, data)
@@ -15,7 +19,8 @@ const createCustomer = catchAsync(async (req, res) => {
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
-    success: true, message: "Customer is created successfully",
+    success: true,
+    message: "Customer is created successfully",
     data: result
   })
 })
@@ -26,6 +31,16 @@ const createAdmin = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true, message: "Admin is created successfully",
+    data: result
+  })
+})
+
+const getAllUser = catchAsync(async (req, res) => {
+
+  const result = await UserService.getAllUserFormDB()
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true, message: "User retrieved successfully",
     data: result
   })
 })
@@ -67,4 +82,4 @@ const myProfile = catchAsync(async (req, res) => {
 })
 
 
-export const UserControllers = { createCustomer, createAdmin, getSingleUser, deleteSingleUser, myProfile }
+export const UserControllers = { createCustomer, getAllUser, createAdmin, getSingleUser, deleteSingleUser, myProfile }

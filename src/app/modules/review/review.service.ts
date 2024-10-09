@@ -11,39 +11,78 @@ import { USER_ROLE } from "../user/utils/user.constant";
 
 const giveReviewSelectedProduct = async (user: JwtPayload, payload: TReview) => {
 
-  const isUserExist = await User.findOne({ email: user.email });
-  const isProductExist = await Products.findById(payload.product);
-  if (!isUserExist) {
-    throw new AppError(httpStatus.BAD_REQUEST, "User is not found ")
+  console.log(user)
+
+  if (user?.email) {
+
+    const isUserExist = await User.findOne({ email: user.email });
+
+
+    if (isUserExist) {
+
+      payload.user = isUserExist._id
+
+    }
+
   }
+
+
+  const isProductExist = await Products.findById(payload.product).populate("reviews");
+
+
   if (!isProductExist) {
-    throw new AppError(httpStatus.NOT_FOUND, `this ${payload.product} is not found`)
+    throw new AppError(httpStatus.NOT_FOUND, `this ${payload.product} is not found`);
   }
-  payload.user = isUserExist._id
-  const session = await mongoose.startSession()
+
+
+  const session = await mongoose.startSession();
+
+  const totalReview = isProductExist?.reviews ? isProductExist.reviews.length : 0;
+
 
   try {
-    session.startTransaction()
-    const result = await Review.create([payload], { new: true, session })
+    session.startTransaction();
+
+    const result = await Review.create([payload], { new: true, session });
     await Products.findByIdAndUpdate(payload.product, {
-      $push: { reviews: result[0]._id }
-    }, {
-      new: true, session
-    })
+      $push: { reviews: result[0]._id },
+      numberOfReviews: totalReview + 1
+    }, { new: true, session });
+
+    const updatedProduct = await Products.findById(payload.product).populate("reviews");
+
+    let averageRating = 0;
+    if (updatedProduct?.reviews && updatedProduct?.reviews.length > 0) {
+      const totalRatings = updatedProduct.reviews.reduce((acc, review) => {
+        if (typeof review === "object" && "rating" in review) {
+          return acc + (review.rating || 0);
+        }
+        return acc;
+      }, 0);
+
+      averageRating = totalRatings / updatedProduct.reviews.length;
+    }
+
+    await Products.findByIdAndUpdate(payload.product, {
+      averageRating: averageRating
+    }, { new: true, session });
 
     await session.commitTransaction();
-    await session.endSession()
+    await session.endSession();
+
     return result;
 
   } catch (error: any) {
     await session.abortTransaction();
-    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message)
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
   }
-}
+};
 
-const getAllReviewFromDB = async () => {
 
-  const result = await Review.find({})
+
+const getAllReviewFromDB = async (limit: number) => {
+
+  const result = await Review.find({}).populate("user").limit(limit)
   return result;
 
 
@@ -68,7 +107,7 @@ const getMyReview = async (user: JwtPayload) => {
 
 
 const getReviewsForProduct = async (productId: string) => {
-
+  console.log(productId)
   const result = await Review.find({ product: productId })
   return result
 

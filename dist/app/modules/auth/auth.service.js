@@ -21,7 +21,7 @@ const user_model_1 = require("../user/user.model");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = __importDefault(require("../../config"));
 const loginUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email, password }) {
-    const user = yield user_model_1.User.findOne({ email: email }).select("+password");
+    const user = yield user_model_1.User.findOne({ email: email }, { new: true }).select("+password role isDeleted");
     if (!user) {
         throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, `${email} is not found , No account associated with this email address`);
     }
@@ -29,11 +29,11 @@ const loginUser = (_a) => __awaiter(void 0, [_a], void 0, function* ({ email, pa
     if (!isPasswordMatch) {
         throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "Your password is wrong");
     }
-    if (user === null || user === void 0 ? void 0 : user.isDeleted) {
-        throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, `${email} is deleted`);
+    if (user.isDeleted) {
+        throw new AppError_1.AppError(http_status_1.default.FORBIDDEN, "You are blocked by Admin");
     }
     const jwtPayload = {
-        email: user.email,
+        email,
         role: user.role
     };
     const accessToken = jsonwebtoken_1.default.sign(jwtPayload, config_1.default.jwt_access_secret, { expiresIn: config_1.default.accessTokenExpiresIn });
@@ -52,7 +52,6 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
         throw new AppError_1.AppError(http_status_1.default.UNAUTHORIZED, error.message);
     }
     const { email, role } = decoded;
-    console.log(decoded);
     const user = yield user_model_1.User.findOne({ email });
     if (!user) {
         throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "This user is not found");

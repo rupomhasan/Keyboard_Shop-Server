@@ -6,120 +6,118 @@ import { TProducts } from "./products.interface";
 import { Products } from "./products.model"
 import { sendImageToCloudinary } from "../../utils/sendImageToCloudinary";
 import slugify from "slugify";
+import { TBrand } from "../brand/brand.interface";
 
 const getAllProductsFromDB = async (payload: Record<string, unknown>) => {
-  // getProducts by search fields
+
   let searchTerm = "";
   if (payload?.searchTerm) {
     searchTerm = payload.searchTerm as string;
   }
-  const searchAbleFields = ["description", "slug", "size", "name",]
+
+  const searchAbleFields = ["name", "description", "tags", "type", "category", "connectivity", "features.size", "features.Switch", "features.SwitchColor", "status"];
 
   const SearchProducts = Products.find({
     $or: searchAbleFields.map((field) => ({
-      [field]: { $regex: searchTerm, $options: "i" }
-    }))
-  })
+      [field]: { $regex: searchTerm.split(",").join("|"), $options: "i" }
+    }
+    ))
+  });
 
-
-  // search by brand 
 
   let brandIds: string[] = [];
-  let BrandIdFilters;
-
   if (payload?.brandIds) {
-    brandIds = payload.brandIds as string[];
-  }
-  if (brandIds.length > 0) {
-    // BrandIdFilters = SearchProducts.find({
-    //   $or: brandIds.map((id) => ({
-    //     brand: id
-    //   }))
-    // })
 
-    BrandIdFilters = SearchProducts.find({
-      brand: { $in: brandIds }
-    })
-
-  }
-  else {
-    BrandIdFilters = SearchProducts
+    const brandIdsString = payload.brandIds as string;
+    brandIds = brandIdsString.includes(",")
+      ? brandIdsString.split(",")
+      : [brandIdsString];
   }
 
 
 
-  // Price filtering
+
   let minPrice: number = 0;
   let maxPrice: number = 100000;
   if (payload?.min) {
-    minPrice = payload.min as number
+    minPrice = payload.min as number;
+  }
+  if (payload?.max) {
+    maxPrice = payload.max as number;
   }
 
-  if (payload.max) {
-    maxPrice = payload.max as number
-  }
-
-  const PriceFilter = BrandIdFilters.find({
+  const PriceFilter = SearchProducts.find({
     price: { $gte: minPrice, $lte: maxPrice }
-  })
-
-
-  // Pagination 
-
+  });
+  // Pagination
   let skip: number = 0;
   let limit: number = 10;
-  let page: number = 1
+  let page: number = 1;
 
   if (payload?.limit) {
-    limit = Number(payload.limit)
+    limit = Number(payload.limit);
   }
-
   if (payload?.page) {
-    page = Number(payload?.page)
-    skip = Number(page - 1) * limit
+    page = Number(payload?.page);
+    skip = Number(page - 1) * limit;
   }
 
+  // Sorting
+  let sortBy: number = 1; // 
 
-  // Sorting 
 
-
-  let sortBy: string = "_cratedAt";
-  if ((payload?.sortBy)) {
-    sortBy = payload.sortBy as string
+  if (payload?.sortBy) {
+    sortBy = Number(payload.sortBy) as number
   }
 
-
-
-  // field filtering 
-
-  let filed = "";
-
+  // field filtering
+  let field = "";
 
   if (payload?.field) {
-    filed = (payload?.field as string).split(",").join(" ");
+    field = (payload?.field as string).split(",").join(" ");
+  }
+
+  const payloadObj = { ...payload };
+  const excludedFields = ["searchTerm", "page", "limit", "sortBy", "field", "min", "max"];
+
+  excludedFields.forEach((e) => delete payloadObj[e]);
+
+  const result = await PriceFilter.find({ isDeleted: false }, payloadObj)
+    .populate("brand")
+    .skip(skip)
+    .limit(limit)
+    .sort({ price: sortBy as 1 | -1 })
+    .select(field);
+
+
+  if (brandIds.length > 0) {
+    const matchedProducts = result.filter(product => {
+      const brand = product?.brand;
+
+      // Check if `brand` is an object and has an `_id` property (assuming TBrand has _id)
+      if (brand && typeof brand === "object" && "_id" in brand) {
+        return brandIds.some(id => (brand as TBrand)._id.toString() === id);
+      }
+
+      // If brand is an ObjectId (assuming it could be), compare it directly
+      if (typeof brand === "string" || brand instanceof Object) {
+        return brandIds.some(id => brand.toString() === id);
+      }
+
+      return false;
+    });
+
+    return matchedProducts;
   }
 
 
 
-  const payloadObj = { ...payload };
-  const excludedFields = ["searchTerm", "page", "limit", "sortBy", "filed", "minPrice", "maxPrice"];
-
-
-
-  excludedFields.forEach((e) => delete payloadObj[e])
-
-
-
-
-  const result = await PriceFilter.find({ isDeleted: false }, payloadObj).populate("brand").skip(skip).limit(limit).sort(sortBy).select(filed);
   return result;
-
-
-}
+};
 
 
 const getSingleProductFromDB = async (_id: string) => {
-  const result = await Products.findOne({ _id, isDeleted: false })
+  const result = await Products.findOne({ _id, isDeleted: false }).populate("brand")
 
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, "Product is not found")
@@ -129,47 +127,48 @@ const getSingleProductFromDB = async (_id: string) => {
 
 
 const createNewProductIntoDB = async (file: any, payload: TProducts) => {
+  const { name, price, brand, discount } = payload;
 
-  const { name, price, brand } = payload;
-
-  const isBrandNameValid = await Brand.findById({ _id: brand })
-
+  const isBrandNameValid = await Brand.findById({ _id: brand });
   if (!isBrandNameValid) {
-    throw new AppError(httpStatus.NOT_FOUND, "Brand is not exist")
+    throw new AppError(httpStatus.NOT_FOUND, "Brand does not exist");
   }
 
-  const isProductExist = await Products.findOne({ name, price, brand })
+  const isProductExist = await Products.findOne({ name, price, brand });
+
+  if (discount && discount > 0) {
+    const discountAmount = (price * discount) / 100;
+    payload.specialPrice = Math.ceil(price - discountAmount);
+  }
 
   if (isProductExist) {
-
     const updatedProductQuantity = payload.productsQuantity + isProductExist.productsQuantity;
-
-    const updatedAvailableQuantity = isProductExist.availableQuantity + payload.productsQuantity;
-
+    const updatedAvailableQuantity = (isProductExist.availableQuantity as number) + payload.productsQuantity;
 
     const updatedProduct = await Products.findByIdAndUpdate(isProductExist._id, {
       productsQuantity: updatedProductQuantity,
-      availableQuantity: updatedAvailableQuantity
-    }, { new: true })
+      availableQuantity: updatedAvailableQuantity,
 
-    return updatedProduct
+    }, { new: true });
+
+    return updatedProduct;
   }
+
   if (file) {
     const { secure_url } = await sendImageToCloudinary(payload.name, file?.path);
-    payload.image = secure_url
+    payload.image = secure_url;
   }
 
-  payload.slug = slugify(`${payload.name}-${isBrandNameValid.brandName}`, { lower: true })
+  payload.slug = slugify(`${payload.name}-${isBrandNameValid.brandName}`, { lower: true });
 
+  payload.availableQuantity = payload.productsQuantity;
 
-  payload.availableQuantity = payload.productsQuantity
-  const result = await Products.create(payload)
+  const result = await Products.create(payload);
 
-  return result
-}
+  return result;
+};
 
-
-const updateProductFromDB = async (_id: string, file: any, payload: Partial<TProducts>) => {
+const updateProductFromDB = async (_id: string, payload: Partial<TProducts>) => {
 
   const isProductExist = await Products.findById(_id)
 
@@ -186,10 +185,6 @@ const updateProductFromDB = async (_id: string, file: any, payload: Partial<TPro
     throw new AppError(httpStatus.NOT_FOUND, `this ${_id} is not found`)
   }
 
-  if (file) {
-    const { secure_url } = await sendImageToCloudinary(payload?.name as string, file?.path);
-    payload.image = secure_url
-  }
 
 
   const result = await Products.findByIdAndUpdate(_id, {
@@ -207,7 +202,9 @@ const deleteProductFromDB = async (_id: string) => {
   if (!isProductExist) {
     throw new AppError(httpStatus.NOT_FOUND, `${_id} is not found`)
   }
-
+  if (isProductExist.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, "this  product is already deleted")
+  }
   const result = await Products.findByIdAndUpdate(_id, {
     isDeleted: true
   }, { new: true });

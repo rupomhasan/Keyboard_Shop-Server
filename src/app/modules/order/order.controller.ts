@@ -15,6 +15,21 @@ const getAllOrder = catchAsync(async (req, res) => {
 
 })
 
+
+const getOrderById = catchAsync(async (req, res) => {
+
+  const result = await orderService.getOrderbyIdFormDB(req.params.id)
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Product is updated successfully",
+    data: result
+  })
+
+})
+
+
+
 const getMyOrder = catchAsync(async (req, res) => {
 
   const result = await orderService.getMyOrderFromDB(req.user)
@@ -79,6 +94,7 @@ const deleteOrderById = catchAsync(async (req, res) => {
 
 export const orderControllers = {
   getAllOrder,
+  getOrderById,
   getMyOrder,
   createNewOrder,
   canceledMyOrder,

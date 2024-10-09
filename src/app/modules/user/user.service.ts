@@ -15,6 +15,7 @@ const myProfile = async (user: JwtPayload) => {
 
   const myData = await User.findOne({ email: user.email }).populate("order")
 
+
   if (!myData) {
     throw new AppError(httpStatus.NOT_FOUND, "Your not authorized your")
   }
@@ -37,12 +38,12 @@ const createCustomerIntoDB = async (file: any, payload: TUser) => {
 
     throw new AppError(httpStatus.BAD_REQUEST, "user already exists");
   }
+  payload.role = "Customer"
 
   if (file) {
     const { secure_url } = await sendImageToCloudinary(payload.name, file?.path);
     payload.photoUrl = secure_url
   }
-
 
   payload.isDeleted = false
   const result = (await User.create(payload));
@@ -72,6 +73,13 @@ const createOrUpdateAdminInDB = async (file: any, payload: Partial<TUser>): Prom
     return await createNewAdminUser(payload, file);
   }
 };
+const getAllUserFormDB = async () => {
+
+  const result = await User.find({ isDeleted: false })
+  return result
+}
+
+
 const getUserByIdFromDB = async (_id: string) => {
 
   const result = await User.findById(_id).select("-password");
@@ -98,10 +106,13 @@ const deleteUserByIdFromDB = async (_id: string) => {
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, "no user available with this account")
   }
+  console.log(result)
   return result
 }
 export const UserService = {
+
   myProfile,
+  getAllUserFormDB,
   createCustomerIntoDB,
   createOrUpdateAdminInDB,
   getUserByIdFromDB,

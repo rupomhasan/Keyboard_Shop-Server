@@ -19,6 +19,7 @@ const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const products_service_1 = require("./products.service");
 const getAllProducts = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield products_service_1.productsServices.getAllProductsFromDB(req.query);
+    // console.log("params :", req.query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -45,7 +46,8 @@ const crateNewProducts = (0, catchAsync_1.default)((req, res) => __awaiter(void 
     });
 }));
 const updateProducts = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield products_service_1.productsServices.updateProductFromDB(req.params.id, req.file, req.body);
+    console.log(req.body);
+    const result = yield products_service_1.productsServices.updateProductFromDB(req.params.id, req.body);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

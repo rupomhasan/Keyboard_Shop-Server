@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.orderService = void 0;
-const sslcommerz_lts_1 = require("sslcommerz-lts");
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = require("../../Error/AppError");
@@ -24,11 +23,6 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const user_model_1 = require("../user/user.model");
 const sendMail_1 = require("../../utils/sendMail");
 const mongodb_1 = require("mongodb");
-const payment_model_1 = require("../payment/payment.model");
-const store_id = "your_store_id";
-const store_password = "your_store_password";
-const is_live = false;
-const sslcommerz = new sslcommerz_lts_1.SSLCommerzPayment(store_id, store_password, is_live);
 const getAllOrderFormDB = () => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield order_model_1.Order.find({});
     return result;
@@ -51,21 +45,29 @@ const createNewOrderIntoDB = (payload, user) => __awaiter(void 0, void 0, void 0
     for (let i = 0; i < items.length; i++) {
         let productFound = false;
         for (let r = 0; r < isProductExist.length; r++) {
-            const isExist = (items[i].productId).toString() === (isProductExist[r]._id).toString();
+            const isExist = items[i].productId.toString() === isProductExist[r]._id.toString();
             if (isExist) {
                 productFound = true;
-                if (isProductExist[r].availableQuantity === 0) {
-                    throw new AppError_1.AppError(http_status_1.default.CONFLICT, `The product '${isProductExist[r].name}' is currently out of stock.`);
+                const product = isProductExist[r]; // Reference to the found product
+                // Ensure the product has availableQuantity
+                if (product.availableQuantity === undefined) {
+                    throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, `Available quantity is missing for product '${product.name}'.`);
                 }
-                if (isProductExist[r].availableQuantity < items[i].quantity) {
-                    throw new AppError_1.AppError(http_status_1.default.CONFLICT, `Insufficient quantity for '${isProductExist[r].name}'. Available: ${isProductExist[r].availableQuantity}, Requested: ${items[i].quantity}.`);
+                // Check if the product is out of stock
+                if (product.availableQuantity === 0) {
+                    throw new AppError_1.AppError(http_status_1.default.CONFLICT, `The product '${product.name}' is currently out of stock.`);
                 }
-                // Calculate the price and subTotal for the item
-                items[i].price = isProductExist[r].price;
-                items[i].total = Math.round(isProductExist[r].price * items[i].quantity);
-                break;
+                // Check if the requested quantity exceeds available stock
+                if (product.availableQuantity < items[i].quantity) {
+                    throw new AppError_1.AppError(http_status_1.default.CONFLICT, `Insufficient quantity for '${product.name}'. Available: ${product.availableQuantity}, Requested: ${items[i].quantity}.`);
+                }
+                // Calculate the price and total for the item
+                items[i].price = product.price;
+                items[i].total = Math.round(product.price * items[i].quantity);
+                break; // Exit inner loop when the product is found and processed
             }
         }
+        // If the product was not found in isProductExist
         if (!productFound) {
             throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, `Product with ID ${items[i].productId} not found.`);
         }
@@ -74,10 +76,9 @@ const createNewOrderIntoDB = (payload, user) => __awaiter(void 0, void 0, void 0
     const session = yield mongoose_1.default.startSession();
     try {
         session.startTransaction();
-        let updatedProduct;
         // Update the product quantities in the database
         for (const item of items) {
-            updatedProduct = yield products_model_1.Products.findOneAndUpdate({ _id: item.productId }, { $inc: { availableQuantity: -item.quantity } }, { new: true, session });
+            yield products_model_1.Products.findOneAndUpdate({ _id: item.productId }, { $inc: { availableQuantity: -item.quantity } }, { new: true, session });
         }
         const tran_id = new mongodb_1.ObjectId().toString();
         payload.subTotal = total;
@@ -86,31 +87,6 @@ const createNewOrderIntoDB = (payload, user) => __awaiter(void 0, void 0, void 0
         // payload.orderStatus = "pending";
         payload.email = user.email;
         payload.tranId = tran_id;
-        const paymentData = {
-            total_amount: totalPrice_1.totalPrice,
-            currency: "BDT",
-            tran_id, // use unique tran_id for each api call
-            success_url: `http://localhost:3000/payment/success/${tran_id}`,
-            fail_url: `http://localhost:3000/payment/fail/${tran_id}`,
-            cancel_url: `http://localhost:3000/payment/cancel/${tran_id}`,
-            ipn_url: "http://localhost:3030/ipn",
-            shipping_method: "Courier",
-            product_name: updatedProduct === null || updatedProduct === void 0 ? void 0 : updatedProduct.name,
-            cus_name: isUserExist.name,
-            cus_email: isUserExist.email,
-            cus_phone: payload.shippedAddress.contactNo,
-            ship_name: payload.shippedAddress.customerName,
-            ship_state: payload.shippedAddress.states,
-            ship_postcode: payload.shippedAddress.zipCode,
-            ship_country: "Bangladesh",
-        };
-        const paymentSession = yield sslcommerz.init(paymentData);
-        if (paymentSession.status !== "SUCCESS") {
-            throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, "Failed to create payment session.");
-        }
-        yield payment_model_1.Payments.create([paymentData], {
-            session
-        });
         const order = yield order_model_1.Order.create([payload], { session });
         yield user_model_1.User.findOneAndUpdate({ email: user.email }, {
             $push: { order: order[0]._id }
@@ -124,7 +100,7 @@ const createNewOrderIntoDB = (payload, user) => __awaiter(void 0, void 0, void 0
     }
     catch (error) {
         yield session.abortTransaction();
-        throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, error);
+        throw new AppError_1.AppError(http_status_1.default.INTERNAL_SERVER_ERROR, error.message);
     }
 });
 const canceledMyOrderFormDB = (user, _id) => __awaiter(void 0, void 0, void 0, function* () {
@@ -189,7 +165,15 @@ const deleteOrderByIdFormDB = (_id) => __awaiter(void 0, void 0, void 0, functio
     }, { new: true });
     return result === null || result === void 0 ? void 0 : result.isDeleted;
 });
+const getOrderbyIdFormDB = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield order_model_1.Order.findOne({ _id: id, isDeleted: false });
+    if (!result) {
+        throw new AppError_1.AppError(http_status_1.default.NOT_FOUND, "this product is not available");
+    }
+    return result;
+});
 exports.orderService = {
+    getOrderbyIdFormDB,
     getAllOrderFormDB,
     getMyOrderFromDB,
     createNewOrderIntoDB,

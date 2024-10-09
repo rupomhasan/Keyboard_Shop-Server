@@ -26,11 +26,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Review = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const ReviewSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", },
-    product: { type: mongoose_1.Schema.Types.ObjectId, ref: "Product", required: true },
-    rating: { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, required: true, maxlength: 500 },
-    isDeleted: { type: Boolean, default: false },
-    updatedAt: { type: Date, default: Date.now },
+    customerName: {
+        type: String
+    },
+    user: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+    },
+    product: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Product",
+        required: true
+    },
+    rating: {
+        type: Number,
+        required: true,
+        min: 1, max: 5
+    },
+    comment: {
+        type: String,
+        required: true,
+        maxlength: 500
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
 }, { timestamps: true });
 exports.Review = mongoose_1.default.model("Review", ReviewSchema);

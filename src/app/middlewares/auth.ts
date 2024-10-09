@@ -37,6 +37,8 @@ export const auth = (...requiredRoles: TUserRoll[]) => {
     if (currentTime >= exp) {
       throw new AppError(httpStatus.UNAUTHORIZED, "Token has expired");
     }
+
+
     const user = await User.findOne({ email })
 
     if (!user) {

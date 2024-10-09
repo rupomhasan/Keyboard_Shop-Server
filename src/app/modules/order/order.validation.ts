@@ -12,7 +12,7 @@ const ShippedAddressSchema = z.object({
   customerName: z.string(),
   states: z.string(),
   contactNo: z.string(),
-  zipCode: z.number().min(1000, "Zip code must be at least 4 digits"),
+  zipCode: z.string(),
   address: z.string(),
   note: z.string().optional(),
 });
@@ -27,7 +27,7 @@ const OrderValidationSchema = z.object(
 );
 const orderStatusSchema = z.object({
   body: z.object({
-    status: z.enum(["pending", "shipped", "delivered", "canceled"])
+    orderStatus: z.enum(["pending", "shipped", "delivered", "canceled"])
   })
 });
 export { OrderValidationSchema, orderStatusSchema };

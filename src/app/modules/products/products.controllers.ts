@@ -7,6 +7,8 @@ import { productsServices } from "./products.service";
 const getAllProducts = catchAsync(async (req, res) => {
   const result = await productsServices.getAllProductsFromDB(req.query);
 
+  // console.log("params :", req.query);
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -39,7 +41,9 @@ const crateNewProducts = catchAsync(async (req, res) => {
 })
 
 const updateProducts = catchAsync(async (req, res) => {
-  const result = await productsServices.updateProductFromDB(req.params.id, req.file, req.body);
+  console.log(req.body)
+
+  const result = await productsServices.updateProductFromDB(req.params.id, req.body);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

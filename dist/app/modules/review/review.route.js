@@ -11,7 +11,7 @@ const review_controller_1 = require("./review.controller");
 const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
 const review_validation_1 = require("./review.validation");
 const router = express_1.default.Router();
-router.post("/", (0, auth_1.auth)(user_constant_1.USER_ROLE.Customer), (0, validateRequest_1.default)(review_validation_1.reviewValidation), review_controller_1.reviewControllers.giveReview);
+router.post("/", (0, validateRequest_1.default)(review_validation_1.reviewValidation), review_controller_1.reviewControllers.giveReview);
 router.get("/", review_controller_1.reviewControllers.getAllReview);
 router.get("/my_reviews", (0, auth_1.auth)(user_constant_1.USER_ROLE.Admin, user_constant_1.USER_ROLE.Customer), review_controller_1.reviewControllers.getMyReviews);
 router.get("/product_reviews/:id", review_controller_1.reviewControllers.getReviewsForProduct);

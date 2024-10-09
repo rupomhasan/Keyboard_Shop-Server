@@ -16,7 +16,7 @@ const ShippedAddressSchema = zod_1.z.object({
     customerName: zod_1.z.string(),
     states: zod_1.z.string(),
     contactNo: zod_1.z.string(),
-    zipCode: zod_1.z.number().min(1000, "Zip code must be at least 4 digits"),
+    zipCode: zod_1.z.string(),
     address: zod_1.z.string(),
     note: zod_1.z.string().optional(),
 });
@@ -29,7 +29,7 @@ const OrderValidationSchema = zod_1.z.object({
 exports.OrderValidationSchema = OrderValidationSchema;
 const orderStatusSchema = zod_1.z.object({
     body: zod_1.z.object({
-        status: zod_1.z.enum(["pending", "shipped", "delivered", "canceled"])
+        orderStatus: zod_1.z.enum(["pending", "shipped", "delivered", "canceled"])
     })
 });
 exports.orderStatusSchema = orderStatusSchema;

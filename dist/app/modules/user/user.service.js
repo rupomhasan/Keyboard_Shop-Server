@@ -41,6 +41,7 @@ const createCustomerIntoDB = (file, payload) => __awaiter(void 0, void 0, void 0
         }
         throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "user already exists");
     }
+    payload.role = "Customer";
     if (file) {
         const { secure_url } = yield (0, sendImageToCloudinary_1.sendImageToCloudinary)(payload.name, file === null || file === void 0 ? void 0 : file.path);
         payload.photoUrl = secure_url;
@@ -65,6 +66,10 @@ const createOrUpdateAdminInDB = (file, payload) => __awaiter(void 0, void 0, voi
         return yield (0, createNewAdmin_1.createNewAdminUser)(payload, file);
     }
 });
+const getAllUserFormDB = () => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_model_1.User.find({ isDeleted: false });
+    return result;
+});
 const getUserByIdFromDB = (_id) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield user_model_1.User.findById(_id).select("-password");
     if (!result) {
@@ -84,10 +89,12 @@ const deleteUserByIdFromDB = (_id) => __awaiter(void 0, void 0, void 0, function
     if (!result) {
         throw new AppError_1.AppError(http_status_1.default.BAD_REQUEST, "no user available with this account");
     }
+    console.log(result);
     return result;
 });
 exports.UserService = {
     myProfile,
+    getAllUserFormDB,
     createCustomerIntoDB,
     createOrUpdateAdminInDB,
     getUserByIdFromDB,

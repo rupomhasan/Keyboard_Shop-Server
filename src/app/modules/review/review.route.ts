@@ -6,7 +6,7 @@ import ValidateRequest from "../../middlewares/validateRequest";
 import { reviewValidation } from "./review.validation";
 const router = express.Router();
 
-router.post("/", auth(USER_ROLE.Customer), ValidateRequest(reviewValidation), reviewControllers.giveReview)
+router.post("/", ValidateRequest(reviewValidation), reviewControllers.giveReview)
 
 router.get("/", reviewControllers.getAllReview)
 

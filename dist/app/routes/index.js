@@ -8,7 +8,6 @@ const products_route_1 = require("../modules/products/products.route");
 const order_route_1 = require("../modules/order/order.route");
 const auth_route_1 = require("../modules/auth/auth.route");
 const review_route_1 = require("../modules/review/review.route");
-const payment_route_1 = require("../modules/payment/payment.route");
 exports.router = (0, express_1.Router)();
 const moduleRoutes = [
     {
@@ -35,9 +34,5 @@ const moduleRoutes = [
         path: "/reviews",
         route: review_route_1.ReviewRoutes
     },
-    {
-        path: "/payment",
-        route: payment_route_1.PaymentRoutes
-    }
 ];
 moduleRoutes.forEach((moduleRoute) => exports.router.use(moduleRoute.path, moduleRoute.route));
